@@ -1,0 +1,6 @@
+@WealthFlow_HostAddress = http://localhost:5246
+
+GET {{WealthFlow_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

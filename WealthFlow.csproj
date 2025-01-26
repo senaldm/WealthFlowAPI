@@ -39,7 +39,6 @@
     <Folder Include="Application\Transactions\Services\" />
     <Folder Include="Application\Validators\" />
     <Folder Include="Domain\Entities\" />
-    <Folder Include="Domain\Enums\" />
     <Folder Include="Infrastructure\Transactions\Repositories\" />
     <Folder Include="Infrastructure\Reports\Repositories\" />
     <Folder Include="Infrastructure\Security\Repositories\" />
@@ -50,6 +49,14 @@
     <Folder Include="Shared\Extensions\" />
     <Folder Include="Tests\IntergrationTests\" />
     <Folder Include="Tests\UnitTests\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EditorConfigFiles Remove="D:\Visual Studio\source\repos\WealthFlow\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="D:\Visual Studio\source\repos\WealthFlow\.editorconfig" />
   </ItemGroup>
 
 </Project>

@@ -12,7 +12,7 @@ namespace WealthFlow.Application.Users.Interfaces
         string GenerateJwtTokenAsync(UserDTO user);
         Task<Result> ChangePasswordAsync(string password);
         Task<Result> RequestToResetPasswordAsync(string email);
-        Task<Result> SendPasswordResetLinkToUserByMailAsync(User user);
+        //Task<Result> SendPasswordResetLinkToUserByMailAsync(User user);
         Task<Result> resetPassword();
         Task<bool> RequestToResetEmail(string recoveryEmail);
         Task<UserDTO> RefreshTokenAsync(string refreshToken);

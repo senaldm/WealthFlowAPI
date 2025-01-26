@@ -2,8 +2,8 @@
 {
     public interface ICacheService
     {
-        Task StoreAsync(string key, string value, TimeSpan expiration);
+        Task<bool> StoreAsync(string key, string value, TimeSpan expiration);
         Task<string?> GetAsync(string key);
-        Task RemoveAsync(string key);
+        Task<bool> RemoveAsync(string key);
     }
 }

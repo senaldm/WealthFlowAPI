@@ -3,8 +3,11 @@ using WealthFlow.Application.Users.DTOs;
 using WealthFlow.Application.Users.Interfaces;
 using WealthFlow.Domain.Entities;
 using WealthFlow.Application.Security.Interfaces;
+using WealthFlow.Infrastructure.Caching;
 using WealthFlow.Shared.Helpers;
 using WealthFlow.Infrastructure.ExternalServices.MailServices;
+using WealthFlow.Application.Caching.Interfaces;
+using static WealthFlow.Domain.Enums.Enum;
 
 namespace WealthFlow.Application.Users.Services
 {
@@ -17,10 +20,12 @@ namespace WealthFlow.Application.Users.Services
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+        private readonly ICacheService _cacheService;
 
         public AuthServices(IAuthRepository authRepository, IUserRepository userRepository, 
             IPasswordHasher passwordHasher, IJwtTokenService jwtTokenService, 
-            IUserService userService, IConfiguration configuration, IEmailService emailService)
+            IUserService userService, IConfiguration configuration,
+            IEmailService emailService, ICacheService cacheService)
         {
             _authRepository = authRepository;
             _userRepository = userRepository;
@@ -29,6 +34,7 @@ namespace WealthFlow.Application.Users.Services
             _userService = userService;
             _configuration = configuration;
             _emailService = emailService;
+            _cacheService = cacheService;
         }
 
         public async Task<Result>  RegisterAsync(UserRegistrationDTO registerUserDTO)
@@ -110,25 +116,29 @@ namespace WealthFlow.Application.Users.Services
             if (user == null)
                 return Result.Failure("No user registerd with this email.", 401);
 
-            return await SendPasswordResetLinkToUserByMailAsync(user);
-        }
-
-        public async Task<Result> SendPasswordResetLinkToUserByMailAsync(User user)
-        {
-
             var verificationCode = GenerateVerificationCode();
+
+            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationTime.PasswordVerficationTime, TimeUnitConversion.ToHours);
+
+            bool isSaved = SaveVerificationCode(user.Id.ToString(), verificationCode, expirationTime);
+
+            if(!isSaved)
+                return Result.Failure("Couldn't to complete the request. Try again", 500);
+
             var verificationLink = GenerateVerificationLink(user.Id, verificationCode);
 
+
+            return await SendPasswordResetLinkToUserByMailAsync(user.Email, verificationLink);
+        }
+
+        private async Task<Result> SendPasswordResetLinkToUserByMailAsync(string userEmail, string verificationLink)
+        {
             var emailBody = $"Please click the following link to verify your email\n {verificationLink}";
-            var emailResult = await _emailService.SendEmailAsync(user.Email, "Account Password Reset Link", emailBody);
+            var emailResult = await _emailService.SendEmailAsync(userEmail, "Account Password Reset Link", emailBody);
             if (emailResult == null)
                 return Result.Failure("Coundn't to send the email. Try again", 500);
 
             return Result.Success("Password reset email send to you.", 200);
-
-
-
-
 
         }
  
@@ -144,6 +154,17 @@ namespace WealthFlow.Application.Users.Services
         {
             var baseUrl = _configuration["AppSettings:BaseUrl"];
             return $"{baseUrl}/verify-email?userId={userId}&code={verificationCode}";
+        }
+
+        private bool SaveVerificationCode(string key, string verificationCode, TimeSpan expiration)
+        {
+            var isStored =  _cacheService.StoreAsync(key, verificationCode, expiration);
+
+            if(isStored == null) 
+                return false;
+            return true;
+
+
         }
 
         public Task<bool> RequestToResetEmail(string recoveryEmail)

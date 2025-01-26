@@ -18,9 +18,9 @@ namespace WealthFlow.Infrastructure.Caching
             return await _cache.StringGetAsync(key);
         }
 
-        public async Task<bool> RemoveAsync(string key)
+        public async Task RemoveAsync(string key)
         {
-             return await _cache.KeyDeleteAsync(key);
+             await _cache.KeyDeleteAsync(key);
         }
 
         public async Task<bool> StoreAsync(string key, string value, TimeSpan expiration)

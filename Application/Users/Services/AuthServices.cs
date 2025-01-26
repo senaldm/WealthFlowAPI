@@ -8,6 +8,9 @@ using WealthFlow.Shared.Helpers;
 using WealthFlow.Infrastructure.ExternalServices.MailServices;
 using WealthFlow.Application.Caching.Interfaces;
 using static WealthFlow.Domain.Enums.Enum;
+using static WealthFlow.Shared.Helpers.Enums.Enum;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.IdentityModel.Tokens;
 
 namespace WealthFlow.Application.Users.Services
 {
@@ -42,7 +45,7 @@ namespace WealthFlow.Application.Users.Services
             bool isUnique = await _userRepository.IsEmailUniqueAsync(registerUserDTO.Email);
 
             if (!isUnique)
-                return Result.Failure("Email is already in use.", 409);
+                return Result.Failure("Email is already in use.", (int)StatusCode.CONFLICT);
 
             string hashedPassword = _passwordHasher.HashPassword(registerUserDTO.Password);
 
@@ -58,9 +61,9 @@ namespace WealthFlow.Application.Users.Services
 
             bool isCreated =  await _authRepository.CreateUserAsync(user);
             if (!isCreated)
-                return Result.Failure("Failed to create user due to internal error!", 500);
+                return Result.Failure("Failed to create user due to internal error!", (int)StatusCode.INTERNAL_SERVER_ERROR);
 
-            return Result.Success(201);
+            return Result.Success("User Registers Successfully! ", (int)StatusCode.CREATED);
         }
 
         public async Task<Result> LoginAsync(string email, string password)
@@ -68,22 +71,27 @@ namespace WealthFlow.Application.Users.Services
             var user = await _userRepository.GetUserByEmailAsync(email);
 
             if (user == null)
-                return Result.Failure("Invalid Email. Please try again", 401);
+                return Result.Failure("Invalid Email. Please try again", (int)StatusCode.UNAUTHORIZED);
 
             if (!_passwordHasher.VerifyPassword(password, user.Password))
-                return Result.Failure("Invalid password.Plese try again.", 401);
+                return Result.Failure("Invalid password.Plese try again.", (int)StatusCode.UNAUTHORIZED);
 
             var userDTO = _userService.extractUserDTOFromUser(user);
-            var token = GenerateJwtTokenAsync(userDTO);
 
-            return Result.Success(token, 200);
+            var token = _jwtTokenService.GenerateJwtToken(userDTO); ;
+
+            string jwtTokenKey = "jwt-token:{user.Id}";
+
+            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationTime.JWT_TOKEN_VERIFICATION_TIME, TimeUnitConversion.DAYS);
+            var isStored =  _cacheService.StoreAsync(jwtTokenKey, token, expirationTime);
+
+            if (isStored == null)
+                return Result.Failure("Couldn't to verify.Please log in again", (int)StatusCode.INTERNAL_SERVER_ERROR);
+
+            return Result.Success(token, (int)StatusCode.OK);
 
         }
 
-        public  string GenerateJwtTokenAsync(UserDTO userDTO)
-        {
-            return  _jwtTokenService.GenerateJwtToken(userDTO);
-        }
 
         public Task<UserDTO> RefreshTokenAsync(string refreshToken)
         {
@@ -94,38 +102,43 @@ namespace WealthFlow.Application.Users.Services
         {
            var userId =  _userService.GetLoggedInUserId();
             if (userId == null) 
-                return Result.Failure("Unorthorized Request, Please login again.", 401);
+                return Result.Failure("Unorthorized Request, Please login again.", (int)StatusCode.UNAUTHORIZED);
 
             var user = await _userRepository.GetUserByIdAsync(userId.Value);
             if (user == null)
-                return Result.Failure("User not found", 400);
+                return Result.Failure("User not found", (int)StatusCode.BAD_REQUEST);
+
+            if (!IsValidPassword(newPassword))
+                return Result.Failure("Password does not meet verification requerements.", (int)StatusCode.BAD_REQUEST);
 
             var hashedPassword = _passwordHasher.HashPassword(newPassword);
 
             var success =  await _authRepository.updatePasswordAsync(user, hashedPassword);
 
             if (!success)
-                return Result.Failure("Failed to update Password", 500);
+                return Result.Failure("Failed to update Password", (int)StatusCode.INTERNAL_SERVER_ERROR);
 
-            return Result.Success(204);
+            return Result.Success((int)StatusCode.OK_WITH_NO_CONTENT);
         }
 
         public async Task<Result> RequestToResetPasswordAsync(string email)
         {
             var user = await _userRepository.GetUserByEmailAsync(email);
             if (user == null)
-                return Result.Failure("No user registerd with this email.", 401);
+                return Result.Failure("No user registerd with this email.", (int)StatusCode.UNAUTHORIZED);
 
             var verificationCode = GenerateVerificationCode();
 
-            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationTime.PasswordVerficationTime, TimeUnitConversion.ToHours);
+            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationTime.PASSWORD_VERIFICATION_TIME, TimeUnitConversion.MINUTES);
 
-            bool isSaved = SaveVerificationCode(user.Id.ToString(), verificationCode, expirationTime);
+            string verificationKey = "password-reset:{user.Id}";
+
+            bool isSaved = SaveAuthKey(verificationKey, verificationCode, expirationTime);
 
             if(!isSaved)
-                return Result.Failure("Couldn't to complete the request. Try again", 500);
+                return Result.Failure("Couldn't to complete the request. Try again", (int)StatusCode.INTERNAL_SERVER_ERROR);
 
-            var verificationLink = GenerateVerificationLink(user.Id, verificationCode);
+            var verificationLink = GenerateVerificationLink(user.Id);
 
 
             return await SendPasswordResetLinkToUserByMailAsync(user.Email, verificationLink);
@@ -136,9 +149,9 @@ namespace WealthFlow.Application.Users.Services
             var emailBody = $"Please click the following link to verify your email\n {verificationLink}";
             var emailResult = await _emailService.SendEmailAsync(userEmail, "Account Password Reset Link", emailBody);
             if (emailResult == null)
-                return Result.Failure("Coundn't to send the email. Try again", 500);
+                return Result.Failure("Coundn't to send the email. Try again", (int)StatusCode.INTERNAL_SERVER_ERROR);
 
-            return Result.Success("Password reset email send to you.", 200);
+            return Result.Success("Password reset email send to you.", (int)StatusCode.OK);
 
         }
  
@@ -150,21 +163,31 @@ namespace WealthFlow.Application.Users.Services
             return verificationCode;
         }
 
-        private string GenerateVerificationLink(Guid userId, string verificationCode)
+        private string GenerateVerificationLink(Guid userId)
         {
             var baseUrl = _configuration["AppSettings:BaseUrl"];
-            return $"{baseUrl}/verify-email?userId={userId}&code={verificationCode}";
+            var verificationKey = $"password_reset:{userId}";
+
+            return $"{baseUrl}/password-reset?key={verificationKey}";
         }
 
-        private bool SaveVerificationCode(string key, string verificationCode, TimeSpan expiration)
+        private bool SaveAuthKey(string authKey, string authValue, TimeSpan expiration)
         {
-            var isStored =  _cacheService.StoreAsync(key, verificationCode, expiration);
+            var isStored =  _cacheService.StoreAsync(authKey, authValue, expiration);
 
             if(isStored == null) 
                 return false;
             return true;
+        }
 
+        public async Task<bool> IsUserAuthenticated(string key)
+        {
+            string storedCode = await _cacheService.GetAsync(key);
 
+            if (string.IsNullOrEmpty(storedCode))
+                return false;
+
+            return true;
         }
 
         public Task<bool> RequestToResetEmail(string recoveryEmail)
@@ -172,9 +195,66 @@ namespace WealthFlow.Application.Users.Services
             throw new NotImplementedException();
         }
 
-        public Task<int> GetVerificationCodeAsync()
+        public async Task<Result> ResetPassword(string key, string newPassword)
         {
-            throw new NotImplementedException();
+            string storedCode = await _cacheService.GetAsync(key);
+
+            if (string.IsNullOrEmpty(storedCode))
+                return Result.Failure("Invalid or Expired password reset link", (int)StatusCode.BAD_REQUEST);
+
+            string userId = key.Replace("password_reset:", "");
+            
+            var user =await _userRepository.GetUserByIdAsync(Guid.Parse(userId));
+
+            if (user == null)
+                return Result.Failure("User not found", (int)StatusCode.BAD_REQUEST);
+
+            if (!IsValidPassword(newPassword))
+                return Result.Failure("Password does not meet verification requerements.", (int)StatusCode.BAD_REQUEST);
+
+
+            string hashedPassword =  _passwordHasher.HashPassword(newPassword);
+
+            bool isPasswordUpdate =await _authRepository.updatePasswordAsync(user, hashedPassword);
+
+            if (!isPasswordUpdate)
+                return Result.Failure("Couldn't to reset password. Try again", (int)StatusCode.INTERNAL_SERVER_ERROR);
+
+            await _cacheService.RemoveAsync(key);
+
+            return Result.Success("Password reset successfully", (int)StatusCode.OK);
+
         }
+
+        private bool IsValidPassword(string password)
+        {
+            if (string.IsNullOrEmpty(password) || password.Length < 8)
+                return false;
+
+            if(!password.Any(char.IsLower))
+                return false;
+            
+            if(!password.Any(char.IsUpper))
+                return false;
+            
+            if(!password.Any(char.IsDigit))
+                return false;
+
+            if(!password.Any(ch => !char.IsLetterOrDigit(ch))) 
+                return false;
+
+            return true;
+        }
+
+        private  bool GetExistUser(Guid userId)
+        {
+            var user =  _userRepository.GetUserByIdAsync(userId);
+
+           
+                return false;
+            return true;
+
+        }
+
     }
 }

@@ -4,18 +4,24 @@
     {
         public enum ExpirationTime
         {
-            PasswordVerficationTime = 5
+            PASSWORD_VERIFICATION_TIME = 10,
+            JWT_TOKEN_VERIFICATION_TIME = 7,
+            EMAIL_VERIFICATION_TIME = 10
         }
         public enum  TimeUnitConversion
         {
-            ToHours,
-            ToMinutes,
-            ToSeconds,
+            HOURS,
+            MINUTES,
+            SECONDS,
+            DAYS
         }
         public enum VerificationType
         {
-            PasswordVerification,
-            EmailVerification
+            PASSWORD_VERIFICATION,
+            EMAIL_VERIFICATION,
+            JWT_TOKEN_VERIFICATION
+
+
         }
 
     }

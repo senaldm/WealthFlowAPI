@@ -5,17 +5,19 @@ namespace WealthFlow.Shared.Helpers
 {
     public static class ToTimeSpan
     {
-        public static TimeSpan covertToTimeSpan(ExpirationTime type, TimeUnitConversion timeUnit)
+        public static TimeSpan covertToTimeSpan(ExpirationTime time, TimeUnitConversion timeUnit)
         {
-            int expirationTime = Convert.ToInt32(type);
+            int expirationTime = Convert.ToInt32(time);
 
             switch(timeUnit)
             {
-                case TimeUnitConversion.ToMinutes:
+                case TimeUnitConversion.DAYS:
+                    return TimeSpan.FromDays(expirationTime);
+                case TimeUnitConversion.MINUTES:
                     return TimeSpan.FromMinutes(expirationTime);
-                case TimeUnitConversion.ToHours:
+                case TimeUnitConversion.HOURS:
                     return TimeSpan.FromHours(expirationTime);
-                case TimeUnitConversion.ToSeconds:
+                case TimeUnitConversion.SECONDS:
                     return TimeSpan.FromSeconds(expirationTime);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(expirationTime), expirationTime, "Invalid expiration type.");

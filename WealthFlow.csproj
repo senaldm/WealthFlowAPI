@@ -29,11 +29,11 @@
     <Folder Include="Application\FinancialPlanning\DTOs\" />
     <Folder Include="Application\FinancialPlanning\Interfaces\" />
     <Folder Include="Application\FinancialPlanning\Services\" />
+    <Folder Include="Application\Notifications\" />
     <Folder Include="Application\Reports\DTOs\" />
     <Folder Include="Application\Reports\Interfaces\" />
     <Folder Include="Application\Reports\Services\" />
     <Folder Include="Application\Security\DTOs\" />
-    <Folder Include="Application\Security\Interfaces\" />
     <Folder Include="Application\Transactions\DTOs\" />
     <Folder Include="Application\Transactions\Interfaces\" />
     <Folder Include="Application\Transactions\Services\" />

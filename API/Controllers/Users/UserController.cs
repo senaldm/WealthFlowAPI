@@ -15,9 +15,11 @@ namespace WealthFlow.API.Controllers.Users
     public class UserController : Controller
     {
         private readonly IUserService _userService;
-        public UserController(IUserService userService)
+        private readonly IAuthService _authService;
+        public UserController(IUserService userService, IAuthService authService)
         {
             _userService = userService;
+            _authService = authService;
         }
 
         private string? GetCurrentUserId()
@@ -26,20 +28,22 @@ namespace WealthFlow.API.Controllers.Users
         }
 
         //get logged user
-        [HttpGet("me")]
-        public async Task<ActionResult<UserDTO>> GetCurrentUser()
-        {
-            var userId = GetCurrentUserId();
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
+        //[HttpGet("me")]
+        //public async Task<ActionResult<UserDTO>> GetCurrentUser(string token)
+        //{
+        //    var id =await _authService.IsUserAuthenticated(token);
 
-            var user = await _userService.GetUserByIdAsync(Guid.Parse(userId));
-            if (user == null)
-                return NotFound("User Not Found");
+        //    if (id == null)
+        //        return Unauthorized();
 
-            return Ok(user);
+        //    Guid userId = id.Value;
+        //    var user = await _userService.GetUserByIdAsync(userId);
+        //    if (user == null)
+        //        return NotFound("User Not Found");
 
-        }
+        //    return Ok(user);
+
+        //}
 
 
         //update logged user details
@@ -81,7 +85,7 @@ namespace WealthFlow.API.Controllers.Users
             if (!isDeleted)
                 return BadRequest("Account Destroy Failed.Try Again !");
 
-            return Ok("Account Destroy Successfully?");
+            return Ok("Account Destroy Successfully!");
         }
 
 

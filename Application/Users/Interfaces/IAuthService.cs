@@ -9,9 +9,8 @@ namespace WealthFlow.Application.Users.Interfaces
     {
         Task<Result> RegisterAsync(UserRegistrationDTO registerUserDTO);
         Task<Result> LoginAsync(string email, string password);
-        Task<Result> ChangePasswordAsync(string password);
+        Task<Result> ChangePasswordAsync(string token, string newPassword);
         Task<Result> RequestToResetPasswordAsync(string email);
-        //Task<Result> SendPasswordResetLinkToUserByMailAsync(User user);
         Task<Result> ForgotEmail(string recoveryEmail);
         Task<Result> RefreshJwtTokenAsync(string key);
         Task<Result> ResetPassword(string key, string newPassword);

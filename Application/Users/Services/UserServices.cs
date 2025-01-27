@@ -2,6 +2,7 @@
 using WealthFlow.Application.Users.DTOs;
 using WealthFlow.Application.Users.Interfaces;
 using WealthFlow.Domain.Entities;
+using WealthFlow.Application.Security.Interfaces;
 
 namespace WealthFlow.Application.Users.Services
 {
@@ -10,12 +11,15 @@ namespace WealthFlow.Application.Users.Services
         private readonly IUserRepository _userRepository;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly AuthServices _authServices;
+        private readonly ITokenService _tokenService;
 
-        public UserServices(IUserRepository userRepository, IHttpContextAccessor contextAccessor, AuthServices authServices)
+        public UserServices(IUserRepository userRepository, IHttpContextAccessor contextAccessor, 
+            AuthServices authServices, ITokenService tokenService)
         {
             _userRepository = userRepository;
             _contextAccessor = contextAccessor;
             _authServices = authServices;
+            _tokenService = tokenService;
         }
 
         public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
@@ -78,13 +82,12 @@ namespace WealthFlow.Application.Users.Services
             return isDeleted;
         }
 
-        public async Task<UserDTO> GetUser(string jwtKey)
+        public async Task<UserDTO> RequestToUpdate(string token)
         {
-            Guid? userId = await _authServices.IsUserAuthenticated(jwtKey);
+            Guid? userId = await _tokenService.GetUserIdFromJwtTokenIfValidated(token);
 
             if (userId == null)
                 return null;
-
             Guid id= userId.Value;
             User user = await _userRepository.GetUserByIdAsync(id); 
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using WealthFlow.Application.Security.Interfaces;
 using WealthFlow.Application.Users.DTOs;
 using WealthFlow.Application.Users.Interfaces;
 using WealthFlow.Shared.Helpers;
@@ -12,9 +13,11 @@ namespace WealthFlow.API.Controllers.Users
     public class AuthController : Controller
     {
         private readonly IAuthService _authService;
-        public AuthController(IAuthService authService)
+        private readonly ITokenService _tokenService;
+        public AuthController(IAuthService authService, ITokenService tokenService)
         {
             _authService = authService;
+            _tokenService = tokenService;
         }
 
 
@@ -72,7 +75,7 @@ namespace WealthFlow.API.Controllers.Users
         [HttpPost("refresh-jwt-token")]
         public async Task<Result> RefreshJwtTokenAsync(string jwtKey)
         {
-            return await _authService.RefreshJwtTokenAsync(jwtKey);
+            return await _tokenService.RefreshJwtTokenAsync(jwtKey);
         }
 
         [HttpPost("password-reset")]

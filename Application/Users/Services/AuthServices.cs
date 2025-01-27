@@ -1,12 +1,9 @@
-﻿using System.Globalization;
-using WealthFlow.Application.Users.DTOs;
+﻿using WealthFlow.Application.Users.DTOs;
 using WealthFlow.Application.Users.Interfaces;
 using WealthFlow.Domain.Entities;
 using WealthFlow.Application.Security.Interfaces;
 using WealthFlow.Shared.Helpers;
 using WealthFlow.Infrastructure.ExternalServices.MailServices;
-using WealthFlow.Application.Caching.Interfaces;
-using static WealthFlow.Domain.Enums.Enum;
 using System.Net;
 
 namespace WealthFlow.Application.Users.Services
@@ -20,12 +17,11 @@ namespace WealthFlow.Application.Users.Services
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
-        private readonly ICacheService _cacheService;
 
         public AuthServices(IAuthRepository authRepository, IUserRepository userRepository, 
             IPasswordService passwordService, ITokenService jwtTokenService, 
             IUserService userService, IConfiguration configuration,
-            IEmailService emailService, ICacheService cacheService)
+            IEmailService emailService)
         {
             _authRepository = authRepository;
             _userRepository = userRepository;
@@ -34,7 +30,6 @@ namespace WealthFlow.Application.Users.Services
             _userService = userService;
             _configuration = configuration;
             _emailService = emailService;
-            _cacheService = cacheService;
         }
 
         public async Task<Result>  RegisterAsync(UserRegistrationDTO registerUserDTO)
@@ -123,23 +118,6 @@ namespace WealthFlow.Application.Users.Services
                 return Result.Failure("No any emails matched to entered email. Try to add correct recovery email", HttpStatusCode.Unauthorized);
 
             return Result.Success(email, HttpStatusCode.OK);
-        }
-
-        public async Task<Result> RefreshJwtTokenAsync(string key)
-        {
-            var token = await _cacheService.GetAsync(key);
-
-            if (string.IsNullOrEmpty(token))
-                return Result.Failure("Invalid or Exprired token",HttpStatusCode.Unauthorized);
-
-            TimeSpan expireTime = ToTimeSpan.covertToTimeSpan(ExpirationType.JWT_TOKEN_VERIFICATION, TimeUnitConversion.DAYS);
-
-            bool isStored = await _cacheService.StoreAsync(key, token, expireTime);
-
-            if (!isStored)
-                return Result.Failure("Couldn't to complete process", HttpStatusCode.InternalServerError);
-
-            return Result.Success(HttpStatusCode.NoContent);
         }
 
         public async Task<Result> ResetPassword(string key, string newPassword)

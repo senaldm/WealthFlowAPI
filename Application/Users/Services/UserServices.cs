@@ -102,6 +102,7 @@ namespace WealthFlow.Application.Users.Services
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
+                Role = user.Role,
             };
 
             return userDTO;

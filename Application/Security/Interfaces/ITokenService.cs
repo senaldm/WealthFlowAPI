@@ -17,5 +17,6 @@ namespace WealthFlow.Application.Security.Interfaces
 
         Task<string?> GetPasswordResetTokenIfAny(string key);
 
+        Task<Result> RefreshJwtTokenAsync(string key);
     }
 }

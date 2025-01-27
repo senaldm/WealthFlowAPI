@@ -12,7 +12,6 @@ namespace WealthFlow.Application.Users.Interfaces
         Task<Result> ChangePasswordAsync(string token, string newPassword);
         Task<Result> RequestToResetPasswordAsync(string email);
         Task<Result> ForgotEmail(string recoveryEmail);
-        Task<Result> RefreshJwtTokenAsync(string key);
         Task<Result> ResetPassword(string key, string newPassword);
     }
 }

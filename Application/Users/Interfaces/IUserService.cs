@@ -11,6 +11,7 @@ namespace WealthFlow.Application.Users.Interfaces
         Task<bool> DeleteUserAsync(Guid id);
         Guid? GetLoggedInUserId();
         UserDTO extractUserDTOFromUser(User user);
+        Task<UserDTO> GetUser(string jwtKey);
 
     }
 }

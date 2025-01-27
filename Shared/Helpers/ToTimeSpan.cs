@@ -5,7 +5,7 @@ namespace WealthFlow.Shared.Helpers
 {
     public static class ToTimeSpan
     {
-        public static TimeSpan covertToTimeSpan(ExpirationTime time, TimeUnitConversion timeUnit)
+        public static TimeSpan covertToTimeSpan(ExpirationType time, TimeUnitConversion timeUnit)
         {
             int expirationTime = Convert.ToInt32(time);
 

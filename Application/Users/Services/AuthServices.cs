@@ -11,6 +11,7 @@ using static WealthFlow.Domain.Enums.Enum;
 using static WealthFlow.Shared.Helpers.Enums.Enum;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace WealthFlow.Application.Users.Services
 {
@@ -82,7 +83,7 @@ namespace WealthFlow.Application.Users.Services
 
             string jwtTokenKey = "jwt-token:{user.Id}";
 
-            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationTime.JWT_TOKEN_VERIFICATION_TIME, TimeUnitConversion.DAYS);
+            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationType.JWT_TOKEN_VERIFICATION, TimeUnitConversion.DAYS);
             var isStored =  _cacheService.StoreAsync(jwtTokenKey, token, expirationTime);
 
             if (isStored == null)
@@ -92,10 +93,21 @@ namespace WealthFlow.Application.Users.Services
 
         }
 
-
-        public Task<UserDTO> RefreshTokenAsync(string refreshToken)
+        public async Task<Result> RefreshJwtTokenAsync(string key)
         {
-            throw new NotImplementedException();
+            var token = await _cacheService.GetAsync(key);
+
+            if (string.IsNullOrEmpty(token))
+                return Result.Failure("Invalid or Exprired token", (int)StatusCode.UNAUTHORIZED);
+
+            TimeSpan expireTime = ToTimeSpan.covertToTimeSpan(ExpirationType.JWT_TOKEN_VERIFICATION, TimeUnitConversion.DAYS);
+
+            bool isStored = await _cacheService.StoreAsync(key, token, expireTime);
+
+            if (!isStored)
+                return Result.Failure("Couldn't to complete process", (int)StatusCode.INTERNAL_SERVER_ERROR);
+
+            return Result.Success((int)StatusCode.OK_WITH_NO_CONTENT);
         }
 
         public async Task<Result> ChangePasswordAsync(string newPassword)
@@ -129,7 +141,7 @@ namespace WealthFlow.Application.Users.Services
 
             var verificationCode = GenerateVerificationCode();
 
-            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationTime.PASSWORD_VERIFICATION_TIME, TimeUnitConversion.MINUTES);
+            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationType.PASSWORD_VERIFICATION, TimeUnitConversion.MINUTES);
 
             string verificationKey = "password-reset:{user.Id}";
 
@@ -141,10 +153,10 @@ namespace WealthFlow.Application.Users.Services
             var verificationLink = GenerateVerificationLink(user.Id);
 
 
-            return await SendPasswordResetLinkToUserByMailAsync(user.Email, verificationLink);
+            return await SendPasswordResetLinkToUserEmailAsync(user.Email, verificationLink);
         }
 
-        private async Task<Result> SendPasswordResetLinkToUserByMailAsync(string userEmail, string verificationLink)
+        private async Task<Result> SendPasswordResetLinkToUserEmailAsync(string userEmail, string verificationLink)
         {
             var emailBody = $"Please click the following link to verify your email\n {verificationLink}";
             var emailResult = await _emailService.SendEmailAsync(userEmail, "Account Password Reset Link", emailBody);
@@ -155,7 +167,7 @@ namespace WealthFlow.Application.Users.Services
 
         }
  
-        private string GenerateVerificationCode()
+        private static string GenerateVerificationCode()
         {
             var random = new Random();
             var verificationCode = random.Next(100000, 999999).ToString();
@@ -180,24 +192,36 @@ namespace WealthFlow.Application.Users.Services
             return true;
         }
 
-        public async Task<bool> IsUserAuthenticated(string key)
+        public async Task<Guid?> IsUserAuthenticated(string key)
         {
-            string storedCode = await _cacheService.GetAsync(key);
+            var jwtToken = await _cacheService.GetAsync(key);
 
-            if (string.IsNullOrEmpty(storedCode))
-                return false;
+            if (string.IsNullOrEmpty(jwtToken))
+                return null;
 
-            return true;
+            Guid userId = GetUserIdFromJwtToken(key);
+            return userId;
         }
 
-        public Task<bool> RequestToResetEmail(string recoveryEmail)
+        private Guid GetUserIdFromJwtToken(string JwtToken)
         {
-            throw new NotImplementedException();
+            string userId = JwtToken.Replace("jwt-token:", "");
+
+            return Guid.Parse(userId);
+        }
+
+        public async Task<Result> ForgotEmail(string recoveryEmail)
+        {
+             var email = await _userRepository.GetUserEmailUsingRecoveryEmail(recoveryEmail);
+            if (email == null)
+                return Result.Failure("No any emails matched to entered email. Try to add correct recovery email", (int)StatusCode.UNAUTHORIZED);
+
+            return Result.Success(email, (int)StatusCode.OK);
         }
 
         public async Task<Result> ResetPassword(string key, string newPassword)
         {
-            string storedCode = await _cacheService.GetAsync(key);
+            var storedCode = await _cacheService.GetAsync(key);
 
             if (string.IsNullOrEmpty(storedCode))
                 return Result.Failure("Invalid or Expired password reset link", (int)StatusCode.BAD_REQUEST);
@@ -250,11 +274,11 @@ namespace WealthFlow.Application.Users.Services
         {
             var user =  _userRepository.GetUserByIdAsync(userId);
 
-           
+           if(user == null)
                 return false;
             return true;
-
         }
+
 
     }
 }

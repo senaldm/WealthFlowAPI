@@ -54,5 +54,13 @@ namespace WealthFlow.Infrastructure.Users.Repositories
             _dbContext.Users.Update(user);
             return await _dbContext.SaveChangesAsync() > 0;
         }
+
+        public async Task<string?> GetUserEmailUsingRecoveryEmail(string recoveryEmail)
+        {
+            return await _dbContext.Users
+                .Where(user => user.RecoveryEmail == recoveryEmail || user.Email == recoveryEmail)
+                .Select(user => user.Email)
+                .FirstOrDefaultAsync();
+        }
     }
 }

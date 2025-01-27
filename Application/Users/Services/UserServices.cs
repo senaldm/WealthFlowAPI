@@ -9,11 +9,13 @@ namespace WealthFlow.Application.Users.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IHttpContextAccessor _contextAccessor;
+        private readonly AuthServices _authServices;
 
-        public UserServices(IUserRepository userRepository, IHttpContextAccessor contextAccessor)
+        public UserServices(IUserRepository userRepository, IHttpContextAccessor contextAccessor, AuthServices authServices)
         {
             _userRepository = userRepository;
             _contextAccessor = contextAccessor;
+            _authServices = authServices;
         }
 
         public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
@@ -74,6 +76,20 @@ namespace WealthFlow.Application.Users.Services
             bool isDeleted = await _userRepository.DeleteUserAsync(userId);
 
             return isDeleted;
+        }
+
+        public async Task<UserDTO> GetUser(string jwtKey)
+        {
+            Guid? userId = await _authServices.IsUserAuthenticated(jwtKey);
+
+            if (userId == null)
+                return null;
+
+            Guid id= userId.Value;
+            User user = await _userRepository.GetUserByIdAsync(id); 
+
+            return  extractUserDTOFromUser(user);
+
         }
 
         public UserDTO extractUserDTOFromUser(User user)

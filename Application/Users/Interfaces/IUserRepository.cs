@@ -10,5 +10,6 @@ namespace WealthFlow.Application.Users.Interfaces
         Task<IEnumerable<User>> GetAllUsersAsync();
         Task<bool> DeleteUserAsync(Guid userId);
         Task<bool> IsEmailUniqueAsync(string email);
+        Task<string?> GetUserEmailUsingRecoveryEmail(string recoveryEmail);
     }
 }

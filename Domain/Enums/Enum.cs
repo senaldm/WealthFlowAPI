@@ -2,11 +2,14 @@
 {
     public class Enum
     {
-        public enum ExpirationType
+        public enum ExpirationTime
         {
             PASSWORD_VERIFICATION = 10,
             JWT_TOKEN_VERIFICATION = 7,
-            EMAIL_VERIFICATION = 10
+            EMAIL_VERIFICATION = 10,
+            REFRESH_TOKEN = 7,
+            JWT_COOKIE = 20,
+               
         }
         public enum  TimeUnitConversion
         {

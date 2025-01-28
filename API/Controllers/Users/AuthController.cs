@@ -43,21 +43,22 @@ namespace WealthFlow.API.Controllers.Users
 
 
         [HttpPost("login")]
-        public async Task<Result> Login(string email, string password)
+        public async Task<Result> Login([FromBody]UserLoginDTO loginForm)
         {
-            if (string.IsNullOrEmpty(email))
+            if (string.IsNullOrEmpty(loginForm.Email))
                 return Result.Failure("Email is required.");
 
-            if (string.IsNullOrEmpty(password))
+            if (string.IsNullOrEmpty(loginForm.Password))
                 return Result.Failure("Password is required.");
 
-            return await _authService.LoginAsync(email, password);
+            return await _authService.LoginAsync(loginForm.Email, loginForm.Password);
         }
 
         [HttpPost("change-password")]
-        public async Task<Result> ChangePassword(string token, string newPassword)
+        public async Task<Result> ChangePassword(string newPassword)
         {
-            return await _authService.ChangePasswordAsync(token,newPassword);
+
+            return await _authService.ChangePasswordAsync(newPassword);
         }
 
         [HttpPost("password-reset-request")]
@@ -75,7 +76,7 @@ namespace WealthFlow.API.Controllers.Users
         [HttpPost("refresh-jwt-token")]
         public async Task<Result> RefreshJwtTokenAsync(string jwtKey)
         {
-            return await _tokenService.RefreshJwtTokenAsync(jwtKey);
+            return await _tokenService.RefreshTokenAsync(jwtKey);
         }
 
         [HttpPost("password-reset")]

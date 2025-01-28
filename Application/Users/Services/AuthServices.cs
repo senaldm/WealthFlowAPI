@@ -17,11 +17,12 @@ namespace WealthFlow.Application.Users.Services
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public AuthServices(IAuthRepository authRepository, IUserRepository userRepository, 
             IPasswordService passwordService, ITokenService jwtTokenService, 
             IUserService userService, IConfiguration configuration,
-            IEmailService emailService)
+            IEmailService emailService, IHttpContextAccessor httpContextAccessor)
         {
             _authRepository = authRepository;
             _userRepository = userRepository;
@@ -30,6 +31,7 @@ namespace WealthFlow.Application.Users.Services
             _userService = userService;
             _configuration = configuration;
             _emailService = emailService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<Result>  RegisterAsync(UserRegistrationDTO registerUserDTO)
@@ -68,20 +70,20 @@ namespace WealthFlow.Application.Users.Services
             if (!_passwordService.VerifyPassword(password, user.Password))
                 return Result.Failure("Invalid password.Plese try again.", HttpStatusCode.Unauthorized);
 
-            var userDTO = _userService.extractUserDTOFromUser(user);
+            var userDTO = _userService.ExtractUserDTOFromUser(user);
 
             return await _tokenService.GenerateJwtToken(userDTO);
         }
        
-        public async Task<Result> ChangePasswordAsync(string token, string newPassword)
+        public async Task<Result> ChangePasswordAsync(string newPassword)
         {
-            var userId = await _tokenService.GetUserIdFromJwtTokenIfValidated(token);
+            var userId = _userService.GetLoggedInUserId();
             if (userId == null)
-                return Result.Failure("Unorthorized Request, Please login again.", HttpStatusCode.Unauthorized);
+                return Result.Failure("Unauthorized Request, Please login again.", HttpStatusCode.Unauthorized);
 
             var user = await _userRepository.GetUserByIdAsync(userId.Value);
             if (user == null)
-                return Result.Failure("User not found", HttpStatusCode.BadRequest);
+                return Result.Failure("User not found", HttpStatusCode.NotFound);
 
             return await _passwordService.UpdatePasswordIfValidatedAsync(user, newPassword);
         }
@@ -131,27 +133,31 @@ namespace WealthFlow.Application.Users.Services
             var user = await _userRepository.GetUserByIdAsync(Guid.Parse(userId));
 
             if (user == null)
-                return Result.Failure("User not found", HttpStatusCode.BadRequest);
+                return Result.Failure("User not found", HttpStatusCode.NotFound);
 
             return await _passwordService.UpdatePasswordIfValidatedAsync(user, newPassword);
 
         }
 
-        private Guid GetUserIdFromJwtToken(string JwtToken)
+        public async Task<Result> LogOut()
         {
-            string userId = JwtToken.Replace("jwt-token:", "");
+            Guid? userId = _userService.GetLoggedInUserId();
 
-            return Guid.Parse(userId);
+            if (userId == null)
+                return Result.Failure("Unauthorized Request, Please login again.", HttpStatusCode.Unauthorized);
+
+            return Result.Success(HttpStatusCode.NoContent);
         }
 
-        private  bool GetExistUser(Guid userId)
+        private async void removeTokens()
         {
-            var user =  _userRepository.GetUserByIdAsync(userId);
+            Guid? userId = _userService.GetLoggedInUserId() ?? Guid.Empty;
+            if (userId == null)
+                return;
 
-           if(user == null)
-                return false;
-            return true;
+            await _tokenService.RemoveTokensInCache(userId.Value);
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete("jwt");
+
         }
-
     }
 }

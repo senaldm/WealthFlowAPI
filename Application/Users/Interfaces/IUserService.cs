@@ -1,17 +1,18 @@
 ﻿using WealthFlow.Application.Users.DTOs;
 using WealthFlow.Domain.Entities;
-
+using WealthFlow.Shared.Helpers;
 namespace WealthFlow.Application.Users.Interfaces
 {
     public interface IUserService
     {
         Task<UserDTO> GetUserByIdAsync(Guid id);
-        Task<bool> UpdateUserAsync(Guid id, UpdateUserDTO updateUserDTO);
+        Task<Result> UpdateUserAsync(UpdateUserDTO updateUserDTO);
         Task<IEnumerable<UserDTO>> GetAllUsersAsync();
-        Task<bool> DeleteUserAsync(Guid id);
+        Task<Result> DeleteUserAsync();
         Guid? GetLoggedInUserId();
-        UserDTO extractUserDTOFromUser(User user);
-        Task<UserDTO> RequestToUpdate(string jwtKey);
+        UserDTO ExtractUserDTOFromUser(User user);
+        Task<UpdateUserDTO> RequestToUpdateAsync();
+        Task<UpdateUserDTO> GetUserDetailsAsync();
 
     }
 }

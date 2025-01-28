@@ -3,6 +3,8 @@ using WealthFlow.Application.Users.DTOs;
 using WealthFlow.Application.Users.Interfaces;
 using WealthFlow.Domain.Entities;
 using WealthFlow.Application.Security.Interfaces;
+using WealthFlow.Shared.Helpers;
+using System.Net;
 
 namespace WealthFlow.Application.Users.Services
 {
@@ -55,47 +57,82 @@ namespace WealthFlow.Application.Users.Services
             };
         }
 
-        public async Task<bool> UpdateUserAsync(Guid id, UpdateUserDTO updateUserDTO)
+        public async Task<UpdateUserDTO> GetUserDetailsAsync()
         {
-            var user = await _userRepository.GetUserByIdAsync(id);
+            Guid? userId = GetLoggedInUserId();
 
-            if (user == null)
-                return false;
+            if (userId == null)
+                return null;
+
+            var user = await _userRepository.GetUserByIdAsync(userId.Value);
+
+            return ExtractPublicUserDetailsFromUser(user);
+        }
+
+        private UpdateUserDTO ExtractPublicUserDetailsFromUser(User user)
+        {
+            var userDetails = new UpdateUserDTO
+            {
+                Name = user.Name,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                RecoveryEmail = user.RecoveryEmail,
+            };
+
+            return userDetails;
+        }
+        public async Task<Result> UpdateUserAsync(UpdateUserDTO updateUserDTO)
+        {
+            Guid? userId = GetLoggedInUserId();
+
+            if (userId == null)
+                return Result.Failure("User not found.", HttpStatusCode.Unauthorized);
+
+            var user = await _userRepository.GetUserByIdAsync(userId.Value);
 
             user.Name = updateUserDTO.Name;
             user.Email = updateUserDTO.Email;
             user.PhoneNumber = updateUserDTO.PhoneNumber;
             user.RecoveryEmail = updateUserDTO.RecoveryEmail;
 
-            return await _userRepository.UpdateUserAsync(user);
+            bool isUpdate =  await _userRepository.UpdateUserAsync(user);
+
+            if (!isUpdate)
+                return Result.Failure("Coundn't to complete task.Try again.", HttpStatusCode.InternalServerError);
+
+            return Result.Success(HttpStatusCode.OK);
         }
 
-        public async Task<bool> DeleteUserAsync(Guid userId)
+        public async Task<Result> DeleteUserAsync()
         {
-            var user = await _userRepository.GetUserByIdAsync(userId);
+            Guid? userId = GetLoggedInUserId();
+  
+            if (userId != null)
+                return Result.Failure("User not found.", HttpStatusCode.Unauthorized);
 
-            if (user != null)
-                return false;
+            bool isDeleted = await _userRepository.DeleteUserAsync(userId.Value);
+            
+            if(!isDeleted)
+                return Result.Failure("Coundn't to complete task.Try again.", HttpStatusCode.InternalServerError);
 
-            bool isDeleted = await _userRepository.DeleteUserAsync(userId);
-
-            return isDeleted;
+            return Result.Success(HttpStatusCode.OK);
         }
 
-        public async Task<UserDTO> RequestToUpdate(string token)
+        public async Task<UpdateUserDTO> RequestToUpdateAsync()
         {
-            Guid? userId = await _tokenService.GetUserIdFromJwtTokenIfValidated(token);
+            Guid? userId = GetLoggedInUserId();
 
             if (userId == null)
                 return null;
-            Guid id= userId.Value;
-            User user = await _userRepository.GetUserByIdAsync(id); 
 
-            return  extractUserDTOFromUser(user);
+            Guid id= userId.Value;
+            User user = await _userRepository.GetUserByIdAsync(id);
+
+            return ExtractPublicUserDetailsFromUser(user);
 
         }
 
-        public UserDTO extractUserDTOFromUser(User user)
+        public UserDTO ExtractUserDTOFromUser(User user)
         {
             var userDTO = new UserDTO
             {

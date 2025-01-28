@@ -3,8 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using WealthFlow.Application.Users.DTOs;
 using WealthFlow.Application.Users.Interfaces;
-using Microsoft.IdentityModel.Tokens;
-
+using WealthFlow.Shared.Helpers;
 
 namespace WealthFlow.API.Controllers.Users
 {
@@ -20,11 +19,6 @@ namespace WealthFlow.API.Controllers.Users
         {
             _userService = userService;
             _authService = authService;
-        }
-
-        private string? GetCurrentUserId()
-        {
-            return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         }
 
         //get logged user
@@ -48,19 +42,10 @@ namespace WealthFlow.API.Controllers.Users
 
         //update logged user details
         [HttpPut("me")]
-        public async Task<ActionResult<UpdateUserDTO>> UpdateCurrentUser([FromBody] UpdateUserDTO updateUserDTO)
+        public async Task<Result> UpdateCurrentUser([FromBody] UpdateUserDTO updateUserDTO)
         {
-            var userId = GetCurrentUserId();
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-
-            var result = await _userService.UpdateUserAsync(Guid.Parse(userId), updateUserDTO);
-            if (!result)
-                return BadRequest("Failed to update userData");
-
-            return Ok("Profile Update SuccessFully");
+            return await _userService.UpdateUserAsync( updateUserDTO);
         }
-
 
         //get all users(Admin only)
         [HttpGet]
@@ -74,31 +59,17 @@ namespace WealthFlow.API.Controllers.Users
 
 
         [HttpDelete("me")]
-        public async Task<IActionResult> DeleteCurrentUser()
+        public async Task<Result> DeleteCurrentUser()
         {
-            var userId = GetCurrentUserId();
-            if(string.IsNullOrEmpty(userId))
-                return NotFound();
-
-            bool isDeleted = await _userService.DeleteUserAsync(Guid.Parse(userId));
-
-            if (!isDeleted)
-                return BadRequest("Account Destroy Failed.Try Again !");
-
-            return Ok("Account Destroy Successfully!");
+            return await _userService.DeleteUserAsync();
         }
 
 
         [HttpDelete("{userId}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteUserById(string userId)
+        public async Task<Result> DeleteUserById()
         {
-            bool isDeleted = await _userService.DeleteUserAsync(Guid.Parse(userId));
-
-            if(!isDeleted)
-                return BadRequest("Account Destroy Failed.Try Again !");
-
-            return Ok("Account Desrtroy Successfully!");
+            return await _userService.DeleteUserAsync();
         }
     }
 }

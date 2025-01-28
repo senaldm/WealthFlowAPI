@@ -1,15 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using WealthFlow.Application.Caching.Interfaces;
 using WealthFlow.Application.Security.Interfaces;
 using WealthFlow.Application.Users.DTOs;
-using WealthFlow.Infrastructure.Caching;
 using static WealthFlow.Domain.Enums.Enum;
 using WealthFlow.Shared.Helpers;
 using System.Net;
+using WealthFlow.Domain.Entities;
 
 namespace WealthFlow.Application.Security.Services
 {
@@ -17,17 +16,36 @@ namespace WealthFlow.Application.Security.Services
     {
         private readonly IConfiguration _configuration;
         private readonly ICacheService _cacheService;
+        private readonly IHttpContextAccessor _contextAccessor;
 
-        public TokenService(IConfiguration configuration, ICacheService cacheService)
+        public TokenService(IConfiguration configuration, ICacheService cacheService, IHttpContextAccessor contextAccessor)
         {
             _configuration = configuration;
             _cacheService = cacheService;
+            _contextAccessor = contextAccessor;
         }
         public async Task<Result> GenerateJwtToken(UserDTO user)
         {
+            var jwtToken = CreateJwtToken(user);
+            var refreshToken = GenerateRefreshToken();
+
+            string refreshTokenKey = $"refresh-token:{user.Id}";
+            TimeSpan refreshTokenExpiration = TimeSpan.FromDays((int)ExpirationTime.REFRESH_TOKEN);
+
+            bool isStored = await _cacheService.StoreAsync(refreshTokenKey, refreshToken, refreshTokenExpiration);
+
+            if(!isStored)
+                return Result.Failure("Please login again", HttpStatusCode.InternalServerError);
+
+            SetJWTCookie(jwtToken);
+
+            return Result.Success(refreshToken, HttpStatusCode.OK);
+        }
+
+        private string CreateJwtToken(UserDTO user)
+        {
             var claims = new[]
             {
-                new Claim(ClaimTypes.Name, user.Email),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Role, user.Role)
             };
@@ -40,118 +58,56 @@ namespace WealthFlow.Application.Security.Services
             var tokenDiscriptor = new SecurityTokenDescriptor
             {
                 Issuer = _configuration["Jwt:Issuer"],
-                Audience =  _configuration["Jwt:Audience"],
+                Audience = _configuration["Jwt:Audience"],
                 Claims = claims.ToDictionary(c => c.Type, c => (object)c.Value),
                 Expires = DateTime.UtcNow.AddDays(expirationTime),
                 SigningCredentials = credentials
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
-
             var token = tokenHandler.CreateToken(tokenDiscriptor);
-            string jwtToken = tokenHandler.WriteToken(token);
 
-            if(await StoreToken(jwtToken, user.Id))
-                return Result.Failure("Couldn't to process.Please log in again", HttpStatusCode.InternalServerError);
-
-            return Result.Success(jwtToken, HttpStatusCode.OK);
+            return tokenHandler.WriteToken(token); 
         }
 
-        private async Task<bool> StoreToken(string token, Guid userId)
+        private string GenerateRefreshToken()
         {
-            string jwtTokenKey = $"jwt-token:{userId}";
-            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationType.JWT_TOKEN_VERIFICATION, TimeUnitConversion.DAYS);
-
-            return await _cacheService.StoreAsync(jwtTokenKey, token, expirationTime);
+            return Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         }
 
-        public async Task<bool> IsValidatedJwtToken(string  jwtKey)
+        private void SetJWTCookie(string jwtToken)
         {
-            var token = await _cacheService.GetAsync(jwtKey);
-
-            if (string.IsNullOrEmpty(token))
-                return false;
-
-            var handler = new JwtSecurityTokenHandler();
-
-            var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
-
-            if (!IsTokenValid(jwtToken))
-                return false;
-
-            return true;
-        }
-
-        public async Task<Guid?> GetUserIdFromJwtTokenIfValidated(string jwtKey)
-        {
-            var token = await _cacheService.GetAsync(jwtKey);
-
-            if (string.IsNullOrEmpty(token))
-                return null;
-
-            var handler = new JwtSecurityTokenHandler();
-
-            var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
-
-            if(!IsTokenValid(jwtToken))
-                return null;
-
-            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return null;
-
-            return userId;
-        }
-
-        private bool IsTokenValid(JwtSecurityToken jwtToken)
-        {
-            try
+            var options = new CookieOptions
             {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes("secretKey");
-                var validationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = _configuration["Jwt:Issuer"],
-                    ValidAudience = _configuration["Jwt:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(key)
-                };
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                MaxAge = TimeSpan.FromMinutes((int)ExpirationTime.JWT_COOKIE),
+            };
 
-                var principal = tokenHandler.ValidateToken(tokenHandler.WriteToken(jwtToken), validationParameters, out SecurityToken validatedToken);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                return false;
-            }
+            _contextAccessor.HttpContext.Response.Cookies.Append("jwt", jwtToken, options);
         }
 
-        public async Task<Result> RefreshJwtTokenAsync(string key)
+        public async Task<Result> RefreshTokenAsync(string refreshToken)
         {
-            var token = await _cacheService.GetAsync(key);
+            var userId = await _cacheService.GetAsync($"refresh-token:{refreshToken}");
 
-            if (string.IsNullOrEmpty(token))
-                return Result.Failure("Invalid or Exprired token", HttpStatusCode.Unauthorized);
+            if (string.IsNullOrEmpty(userId) || Guid.TryParse(userId, out var userGuid))
+                return Result.Failure("Refresh token is invalid or expired.", HttpStatusCode.Unauthorized);
 
-            TimeSpan expireTime = ToTimeSpan.covertToTimeSpan(ExpirationType.JWT_TOKEN_VERIFICATION, TimeUnitConversion.DAYS);
+            var user = new UserDTO { Id = userGuid };
 
-            bool isStored = await _cacheService.StoreAsync(key, token, expireTime);
+            string newJwtToken = CreateJwtToken(user);
 
-            if (!isStored)
-                return Result.Failure("Couldn't to complete process", HttpStatusCode.InternalServerError);
+            SetJWTCookie(newJwtToken);
 
             return Result.Success(HttpStatusCode.NoContent);
         }
-
+   
         public async Task<bool> StorePasswordResetToken(Guid userId, string token)
         {
-            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationType.PASSWORD_VERIFICATION, TimeUnitConversion.MINUTES);
-            string verificationKey = $"password_reset_{token}";
+            TimeSpan expirationTime = ToTimeSpan.covertToTimeSpan(ExpirationTime.PASSWORD_VERIFICATION, TimeUnitConversion.MINUTES);
+            string verificationKey = $"password_reset:{token}";
 
             return await _cacheService.StoreAsync(verificationKey, userId.ToString(), expirationTime);
         }
@@ -165,9 +121,12 @@ namespace WealthFlow.Application.Security.Services
 
             return userId;
         }
-        public string GetJwtToken()
+
+       public async Task RemoveTokensInCache(Guid userId)
         {
-            throw new NotImplementedException();
+            string refreshTokenKey = $"refresh-token:{userId}";
+            await _cacheService.RemoveAsync(refreshTokenKey);
+
         }
     }
 }

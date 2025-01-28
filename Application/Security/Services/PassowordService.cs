@@ -5,8 +5,6 @@ using System.Net;
 using WealthFlow.Domain.Entities;
 using WealthFlow.Shared.Helpers;
 using WealthFlow.Application.Users.Interfaces;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using WealthFlow.Infrastructure.Users.Repositories;
 
 namespace WealthFlow.Application.Security.Services
 {

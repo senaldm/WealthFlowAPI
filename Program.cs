@@ -1,11 +1,19 @@
+using Microsoft.EntityFrameworkCore;
 using WealthFlow.API.Middleware;
 using WealthFlow.Application.Security.Extensions;
 using WealthFlow.Application.Users.Interfaces;
 using WealthFlow.Application.Users.Services;
+using WealthFlow.Infrastructure.Data;
 using WealthFlow.Infrastructure.Users.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddDbContext<ApplicationDBContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(8, 0, 34)) // Change based on your MySQL version
+    )
+);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // Add services to the container.

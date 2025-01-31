@@ -1,7 +1,6 @@
-﻿using WealthFlow.Application.Users.Interfaces;
-using WealthFlow.Infrastructure.Data;
-using WealthFlow.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using WealthFlow.Domain.Entities.User;
+using WealthFlow.Infrastructure.Persistence.DBContexts;
 
 namespace WealthFlow.Infrastructure.Users.Repositories
 {

@@ -2,9 +2,9 @@
 using BCrypt.Net;
 using System.Security.Cryptography;
 using System.Net;
-using WealthFlow.Domain.Entities;
 using WealthFlow.Shared.Helpers;
-using WealthFlow.Application.Users.Interfaces;
+using WealthFlow.Domain.Entities.User;
+using WealthFlow.Infrastructure.Users.Repositories;
 
 namespace WealthFlow.Application.Security.Services
 {

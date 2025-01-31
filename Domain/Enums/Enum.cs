@@ -27,5 +27,11 @@
 
         }
 
+        public enum  TransactionType
+        {
+            INCOME,
+            EXPENCES
+
+        }
     }
 }

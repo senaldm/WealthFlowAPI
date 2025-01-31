@@ -1,10 +1,11 @@
 ﻿using WealthFlow.Application.Users.DTOs;
 using WealthFlow.Application.Users.Interfaces;
-using WealthFlow.Domain.Entities;
+using WealthFlow.Domain.Entities.User;
 using WealthFlow.Application.Security.Interfaces;
 using WealthFlow.Shared.Helpers;
 using WealthFlow.Infrastructure.ExternalServices.MailServices;
 using System.Net;
+using WealthFlow.Infrastructure.Users.Repositories;
 
 namespace WealthFlow.Application.Users.Services
 {
@@ -34,12 +35,12 @@ namespace WealthFlow.Application.Users.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<Result>  RegisterAsync(UserRegistrationDTO registerUserDTO)
+        public async Task<Result<string>>  RegisterAsync(UserRegistrationDTO registerUserDTO)
         {
             bool isUnique = await _userRepository.IsEmailUniqueAsync(registerUserDTO.Email);
 
             if (!isUnique)
-                return Result.Failure("Email is already in use.", HttpStatusCode.Conflict);
+                return Result<string>.Failure("Email is already in use.", HttpStatusCode.Conflict);
 
             string hashedPassword = _passwordService.HashPassword(registerUserDTO.Password);
 
@@ -55,50 +56,50 @@ namespace WealthFlow.Application.Users.Services
 
             bool isCreated =  await _authRepository.CreateUserAsync(user);
             if (!isCreated)
-                return Result.Failure("Failed to create user due to internal error!", HttpStatusCode.InternalServerError);
+                return Result<string>.Failure("Failed to create user due to internal error!", HttpStatusCode.InternalServerError);
 
-            return Result.Success("User Registers Successfully! ", HttpStatusCode.Created);
+            return Result<string>.Success("User Registers Successfully! ", HttpStatusCode.Created);
         }
 
-        public async Task<Result> LoginAsync(string email, string password)
+        public async Task<Result<string>> LoginAsync(string email, string password)
         {
             var user = await _userRepository.GetUserByEmailAsync(email);
 
             if (user == null)
-                return Result.Failure("Invalid Email. Please try again", HttpStatusCode.Unauthorized);
+                return Result<string>.Failure("Invalid Email. Please try again", HttpStatusCode.Unauthorized);
 
             if (!_passwordService.VerifyPassword(password, user.Password))
-                return Result.Failure("Invalid password.Plese try again.", HttpStatusCode.Unauthorized);
+                return Result<string>.Failure("Invalid password.Plese try again.", HttpStatusCode.Unauthorized);
 
             var userDTO = _userService.ExtractUserDTOFromUser(user);
 
             return await _tokenService.GenerateJwtToken(userDTO);
         }
        
-        public async Task<Result> ChangePasswordAsync(string newPassword)
+        public async Task<Result<string>> ChangePasswordAsync(string newPassword)
         {
             var userId = _userService.GetLoggedInUserId();
             if (userId == null)
-                return Result.Failure("Unauthorized Request, Please login again.", HttpStatusCode.Unauthorized);
+                return Result<string>.Failure("Unauthorized Request, Please login again.", HttpStatusCode.Unauthorized);
 
             var user = await _userRepository.GetUserByIdAsync(userId.Value);
             if (user == null)
-                return Result.Failure("User not found", HttpStatusCode.NotFound);
+                return Result<string>.Failure("User not found", HttpStatusCode.NotFound);
 
             return await _passwordService.UpdatePasswordIfValidatedAsync(user, newPassword);
         }
 
-        public async Task<Result> RequestToResetPasswordAsync(string email)
+        public async Task<Result<string>> RequestToResetPasswordAsync(string email)
         {
             var user = await _userRepository.GetUserByEmailAsync(email);
             if (user == null)
-                return Result.Failure("No user registerd with this email.", HttpStatusCode.Unauthorized);
+                return Result<string>.Failure("No user registerd with this email.", HttpStatusCode.Unauthorized);
 
             string verificationToken = _passwordService.GeneratePasswordResetToken();
             bool isSaved = await _tokenService.StorePasswordResetToken(user.Id, verificationToken);
 
             if (!isSaved)
-                return Result.Failure("Couldn't to complete the request. Try again", HttpStatusCode.InternalServerError);
+                return Result<string>.Failure("Couldn't to complete the request. Try again", HttpStatusCode.InternalServerError);
 
             var verificationLink = GenerateVerificationLink(verificationToken);
 
@@ -113,43 +114,44 @@ namespace WealthFlow.Application.Users.Services
             return $"{baseUrl}/reset-password?token={token}";
         }
 
-        public async Task<Result> ForgotEmail(string recoveryEmail)
+        public async Task<Result<string>> ForgotEmail(string recoveryEmail)
         {
             var email = await _userRepository.GetUserEmailUsingRecoveryEmail(recoveryEmail);
             if (email == null)
-                return Result.Failure("No any emails matched to entered email. Try to add correct recovery email", HttpStatusCode.Unauthorized);
+                return Result<string>.Failure("No any emails matched to entered email. Try to add correct recovery email", HttpStatusCode.Unauthorized);
 
-            return Result.Success(email, HttpStatusCode.OK);
+            return Result<string>.Success(email, HttpStatusCode.OK);
         }
 
-        public async Task<Result> ResetPassword(string key, string newPassword)
+        public async Task<Result<string>> ResetPassword(string key, string newPassword)
         {
 
             string userId = await _tokenService.GetPasswordResetTokenIfAny(key);
 
             if (string.IsNullOrEmpty(userId))
-                return Result.Failure("Invalid or Exprired password reset link", HttpStatusCode.BadRequest);
+                return Result<string>.Failure("Invalid or Exprired password reset link", HttpStatusCode.BadRequest);
 
             var user = await _userRepository.GetUserByIdAsync(Guid.Parse(userId));
 
             if (user == null)
-                return Result.Failure("User not found", HttpStatusCode.NotFound);
+                return Result<string>.Failure("User not found", HttpStatusCode.NotFound);
 
             return await _passwordService.UpdatePasswordIfValidatedAsync(user, newPassword);
 
         }
 
-        public async Task<Result> LogOut()
+        public async Task<Result<Object>> LogOut()
         {
             Guid? userId = _userService.GetLoggedInUserId();
 
             if (userId == null)
-                return Result.Failure("Unauthorized Request, Please login again.", HttpStatusCode.Unauthorized);
+                return Result<Object>.Failure("Unauthorized Request, Please login again.", HttpStatusCode.Unauthorized);
 
-            return Result.Success(HttpStatusCode.NoContent);
+            await removeTokens();
+            return Result<Object>.Success(HttpStatusCode.NoContent);
         }
 
-        private async void removeTokens()
+        private async Task removeTokens()
         {
             Guid? userId = _userService.GetLoggedInUserId() ?? Guid.Empty;
             if (userId == null)

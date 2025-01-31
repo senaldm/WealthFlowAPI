@@ -3,7 +3,7 @@ using WealthFlow.API.Middleware;
 using WealthFlow.Application.Security.Extensions;
 using WealthFlow.Application.Users.Interfaces;
 using WealthFlow.Application.Users.Services;
-using WealthFlow.Infrastructure.Data;
+using WealthFlow.Infrastructure.Persistence.DBContexts;
 using WealthFlow.Infrastructure.Users.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);

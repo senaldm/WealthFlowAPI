@@ -7,12 +7,12 @@ namespace WealthFlow.Application.Users.Interfaces
 {
     public interface IAuthService
     {
-        Task<Result> RegisterAsync(UserRegistrationDTO registerUserDTO);
-        Task<Result> LoginAsync(string email, string password);
-        Task<Result> ChangePasswordAsync(string newPassword);
-        Task<Result> RequestToResetPasswordAsync(string email);
-        Task<Result> ForgotEmail(string recoveryEmail);
-        Task<Result> ResetPassword(string key, string newPassword);
-        Task<Result> LogOut();
+        Task<Result<string>> RegisterAsync(UserRegistrationDTO registerUserDTO);
+        Task<Result<string>> LoginAsync(string email, string password);
+        Task<Result<string>> ChangePasswordAsync(string newPassword);
+        Task<Result<string>> RequestToResetPasswordAsync(string email);
+        Task<Result<string>> ForgotEmail(string recoveryEmail);
+        Task<Result<string>> ResetPassword(string key, string newPassword);
+        Task<Result<Object>> LogOut();
     }
 }

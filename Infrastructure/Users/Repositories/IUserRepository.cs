@@ -1,6 +1,6 @@
-﻿using WealthFlow.Domain.Entities;
+﻿using WealthFlow.Domain.Entities.User;
 
-namespace WealthFlow.Application.Users.Interfaces
+namespace WealthFlow.Infrastructure.Users.Repositories
 {
     public interface IUserRepository
     {

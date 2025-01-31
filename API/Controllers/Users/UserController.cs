@@ -42,7 +42,7 @@ namespace WealthFlow.API.Controllers.Users
 
         //update logged user details
         [HttpPut("me")]
-        public async Task<Result> UpdateCurrentUser([FromBody] UpdateUserDTO updateUserDTO)
+        public async Task<Result<Object>> UpdateCurrentUser([FromBody] UpdateUserDTO updateUserDTO)
         {
             return await _userService.UpdateUserAsync( updateUserDTO);
         }
@@ -50,16 +50,15 @@ namespace WealthFlow.API.Controllers.Users
         //get all users(Admin only)
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<UserDTO>> GetAllUsers()
+        public async Task<Result<Object>> GetAllUsers()
         {
-            var users = await _userService.GetAllUsersAsync();
+            return await _userService.GetAllUsersAsync();
 
-            return Ok(users);
         }
 
 
         [HttpDelete("me")]
-        public async Task<Result> DeleteCurrentUser()
+        public async Task<Result<string>> DeleteCurrentUser()
         {
             return await _userService.DeleteUserAsync();
         }
@@ -67,7 +66,7 @@ namespace WealthFlow.API.Controllers.Users
 
         [HttpDelete("{userId}")]
         [Authorize(Roles = "Admin")]
-        public async Task<Result> DeleteUserById()
+        public async Task<Result<string>> DeleteUserById()
         {
             return await _userService.DeleteUserAsync();
         }

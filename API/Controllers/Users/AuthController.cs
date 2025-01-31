@@ -22,20 +22,20 @@ namespace WealthFlow.API.Controllers.Users
 
 
         [HttpPost("register")]
-        public async Task<Result> RegisterUser([FromBody] UserRegistrationDTO registerUserDTO)
+        public async Task<Result<string>> RegisterUser([FromBody] UserRegistrationDTO registerUserDTO)
         {
             if (registerUserDTO == null)
-                return Result.Failure("You must fill the fields");
+                return Result<string>.Failure("You must fill the fields");
 
             if (string.IsNullOrEmpty(registerUserDTO.Name))
-                return Result.Failure("Name is required");
+                return Result<string>.Failure("Name is required");
 
 
             if (string.IsNullOrEmpty(registerUserDTO.Email))
-                return Result.Failure("Email is required");
+                return Result<string>.Failure("Email is required");
 
             if (string.IsNullOrEmpty(registerUserDTO.Password))
-                return Result.Failure("Password is required");
+                return Result<string>.Failure("Password is required");
 
             return await _authService.RegisterAsync(registerUserDTO);
 
@@ -43,44 +43,44 @@ namespace WealthFlow.API.Controllers.Users
 
 
         [HttpPost("login")]
-        public async Task<Result> Login([FromBody]UserLoginDTO loginForm)
+        public async Task<Result<string>> Login([FromBody]UserLoginDTO loginForm)
         {
             if (string.IsNullOrEmpty(loginForm.Email))
-                return Result.Failure("Email is required.");
+                return Result<string>.Failure("Email is required.");
 
             if (string.IsNullOrEmpty(loginForm.Password))
-                return Result.Failure("Password is required.");
+                return Result<string>.Failure("Password is required.");
 
             return await _authService.LoginAsync(loginForm.Email, loginForm.Password);
         }
 
         [HttpPost("change-password")]
-        public async Task<Result> ChangePassword(string newPassword)
+        public async Task<Result<string>> ChangePassword(string newPassword)
         {
 
             return await _authService.ChangePasswordAsync(newPassword);
         }
 
         [HttpPost("password-reset-request")]
-        public async Task<Result> RequestToResetPasswordAsync(string email)
+        public async Task<Result<string>> RequestToResetPasswordAsync(string email)
         {
             return await _authService.RequestToResetPasswordAsync(email);
         }
 
         [HttpPost("forgot-email")]
-        public async Task<Result> ForgotEmailAsync(string recoveryEmail)
+        public async Task<Result<string>> ForgotEmailAsync(string recoveryEmail)
         {
             return await _authService.ForgotEmail(recoveryEmail);
         }
 
         [HttpPost("refresh-jwt-token")]
-        public async Task<Result> RefreshJwtTokenAsync(string jwtKey)
+        public async Task<Result<string>> RefreshJwtTokenAsync(string jwtKey)
         {
             return await _tokenService.RefreshTokenAsync(jwtKey);
         }
 
         [HttpPost("password-reset")]
-        public async Task<Result> ResetPassword(string key, string newPassword)
+        public async Task<Result<string>> ResetPassword(string key, string newPassword)
         {
             return await _authService.ResetPassword(key, newPassword);
         }

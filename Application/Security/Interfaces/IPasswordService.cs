@@ -1,5 +1,5 @@
 ﻿using WealthFlow.Shared.Helpers;
-using WealthFlow.Domain.Entities;
+using WealthFlow.Domain.Entities.User;
 
 namespace WealthFlow.Application.Security.Interfaces
 {

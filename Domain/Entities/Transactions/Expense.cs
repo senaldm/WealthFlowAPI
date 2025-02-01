@@ -2,7 +2,7 @@
 {
     public class Expense
     {
-        public int ExpenseId { get; set; }
+        public Guid ExpenseId { get; set; }
         public Guid UserId { get; set; }
 
         public string ExpenseName { get; set; }

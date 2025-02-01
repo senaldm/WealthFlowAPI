@@ -33,5 +33,17 @@
             EXPENCES
 
         }
+        public enum SortBy
+        {
+ 
+            CREATED_DATE,
+            VALUE
+        }
+
+        public enum SortOrderBy
+        {
+            ASC,
+            DESC
+        }
     }
 }

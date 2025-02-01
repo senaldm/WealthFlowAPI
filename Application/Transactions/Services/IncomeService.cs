@@ -1,11 +1,11 @@
-﻿using WealthFlow.Application.Transactions.DTOs;
+﻿using System.Net;
+using WealthFlow.Application.Transactions.DTOs;
 using WealthFlow.Application.Transactions.Interfaces;
 using WealthFlow.Infrastructure.Transactions.Repositories;
 using WealthFlow.Shared.Helpers;
-using System.Net;
 using WealthFlow.Application.Users.Interfaces;
 using WealthFlow.Domain.Entities.Transactions;
-using WealthFlow.Domain.Entities.User;
+using static WealthFlow.Domain.Enums.Enum;
 
 namespace WealthFlow.Application.Transactions.Services
 {
@@ -20,14 +20,13 @@ namespace WealthFlow.Application.Transactions.Services
             _userService = userService;
         }
 
-        public async Task<Result<string>> DeleteIncomeAsync(Guid incomeId)
+        public async Task<Result<string>> DeleteBulkOrSingleIncomeDetailsAsync(List<Guid> incomeIds)
         {
-            var Income = await _incomeRepository.GetIncomeDetailsAsync(incomeId);
+            if(incomeIds == null || !incomeIds.Any())
+                return Result<string>.Failure("You must select entries to remove", HttpStatusCode.BadRequest);
 
-            if (Income == null)
-                return Result<string>.Failure("Income Details is already deleted or cannot find.", HttpStatusCode.NotFound);
 
-            bool isDeleted = await _incomeRepository.DeleteIncomeDetailsAsync(Income);
+            bool isDeleted = await _incomeRepository.DeleteBulkOrSingleIncomeDetailsAsync(incomeIds);
 
             if (!isDeleted)
                 return Result<string>.Failure("Internal Server Error. Try Again.", HttpStatusCode.InternalServerError);
@@ -35,18 +34,19 @@ namespace WealthFlow.Application.Transactions.Services
             return Result<string>.Success("Succeffuly Delete the income details", HttpStatusCode.OK);
         }
 
-        public async Task<Result<Object>> GetAllIncomeDetailsAsync()
+        public async Task<Result<Object>> GetAllIncomeDetailsAsync(int pageNumber, int pageSize, SortBy sortBy, SortOrderBy orderBy)
         {
             Guid? userId = _userService.GetLoggedInUserId();
 
             if (userId == null)
                 return Result<Object>.Failure("User not found.", HttpStatusCode.Unauthorized);
 
-            IEnumerable<Income> incomeDetails = await _incomeRepository.GetAllIncomeDetailsAsync(userId.Value);
+            List<Income> incomeDetails = await _incomeRepository.GetAllIncomeDetailsAsync(userId.Value, pageNumber, pageSize, sortBy, orderBy);
             return Result<Object>.Success(ExtractIncomeDTOFromIncome(incomeDetails));
 
         }
-        private List<IncomeDTO> ExtractIncomeDTOFromIncome(IEnumerable<Income>? incomeDetails)
+        
+        private static List<IncomeDTO> ExtractIncomeDTOFromIncome(IEnumerable<Income>? incomeDetails)
         {
             if (incomeDetails == null)
                 return null;
@@ -62,7 +62,7 @@ namespace WealthFlow.Application.Transactions.Services
 
         }
 
-        public async Task<Result<Object>> GetDateSpeciftcIncomeDetailsAsync(DateTime startingDate, DateTime endDate)
+        public async Task<Result<Object>> GetDateSpecificIncomeDetailsAsync(DateTime startingDate, DateTime endDate)
         {
             Guid? userId = _userService.GetLoggedInUserId();
 
@@ -89,7 +89,6 @@ namespace WealthFlow.Application.Transactions.Services
                 return Result<string>.Failure("Couldn't to make the task. Please try again.", HttpStatusCode.InternalServerError);
 
             return Result<string>.Success("Income details added successfully.", HttpStatusCode.OK);
-
         }
 
         private Income ConvertIncomeDTOIntoIncome(IncomeDTO incomeDTO, Guid userId)
@@ -123,18 +122,9 @@ namespace WealthFlow.Application.Transactions.Services
             if (!isUpdated)
                 return Result<Object>.Failure("Couldn't to make the task. Please try again.", HttpStatusCode.InternalServerError);
 
-            Income updatedIncome = await _incomeRepository.GetIncomeDetailsAsync(income.IncomeId);
-
-            return Result<Object>.Success(new IncomeDTO
-            {
-                IncomeId = updatedIncome.IncomeId,
-                IncomeName = updatedIncome.IncomeName,
-                IncomeAmount = updatedIncome.IncomeAmount,
-                IncomeDescription = updatedIncome.IncomeDescription,
-                IncomeTypeId = updatedIncome.IncomeTypeId,
-            });
-
-
+            return Result<Object>.Success(incomeDTO);
         }
+    
+
     }
 }

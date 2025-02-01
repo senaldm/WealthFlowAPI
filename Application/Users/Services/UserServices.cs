@@ -103,11 +103,7 @@ namespace WealthFlow.Application.Users.Services
             if (!isUpdate)
                 return Result<Object>.Failure("Coundn't to complete task.Try again.", HttpStatusCode.InternalServerError);
 
-            var updatedUser = await _userRepository.GetUserByIdAsync(userId.Value);
-
-            UserDTO passableUser = ExtractUserDTOFromUser(updatedUser);
-
-            return Result<Object>.Success(passableUser,HttpStatusCode.OK);
+            return Result<Object>.Success(updateUserDTO, HttpStatusCode.OK);
         }
 
         public async Task<Result<string>> DeleteUserAsync()

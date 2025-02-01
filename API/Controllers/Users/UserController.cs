@@ -11,7 +11,7 @@ namespace WealthFlow.API.Controllers.Users
     [ApiController]
     [Authorize]
 
-    public class UserController : Controller
+    public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
         private readonly IAuthService _authService;
@@ -64,9 +64,9 @@ namespace WealthFlow.API.Controllers.Users
         }
 
 
-        [HttpDelete("{userId}")]
+        [HttpDelete("admin-interact")]
         [Authorize(Roles = "Admin")]
-        public async Task<Result<string>> DeleteUserById()
+        public async Task<Result<string>> DeleteUser()
         {
             return await _userService.DeleteUserAsync();
         }

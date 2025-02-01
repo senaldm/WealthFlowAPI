@@ -1,5 +1,4 @@
-﻿using WealthFlow.Domain.Enums;
-using static WealthFlow.Domain.Enums.Enum;
+﻿using static WealthFlow.Domain.Enums.Enum;
 
 namespace WealthFlow.Shared.Helpers
 {

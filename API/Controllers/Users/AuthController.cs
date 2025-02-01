@@ -10,7 +10,7 @@ namespace WealthFlow.API.Controllers.Users
 
     [Route("api/auth")]
     [ApiController]
-    public class AuthController : Controller
+    public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
         private readonly ITokenService _tokenService;

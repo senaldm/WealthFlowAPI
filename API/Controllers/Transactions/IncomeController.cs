@@ -1,86 +1,46 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using WealthFlow.Shared.Helpers;
+using WealthFlow.Application.Transactions.DTOs;
+using WealthFlow.Application.Transactions.Interfaces;
+using static WealthFlow.Domain.Enums.Enum;
 
 namespace WealthFlow.API.Controllers.Transactions
 {
     [Route("api/income")]
     [ApiController]
 
-    public class IncomeController : Controller
+    public class IncomeController : ControllerBase
     {
-        // GET: HomeController
-        public ActionResult Index()
+        private readonly IIncomeService _incomeService;
+
+        public IncomeController(IIncomeService incomeService)
         {
-            return View();
+            _incomeService = incomeService;
         }
 
-        // GET: HomeController/Details/5
-        public ActionResult Details(int id)
+        [HttpPost("store")]
+        public async Task<Result<string>> StoreIncomeAsync([FromBody] IncomeDTO incomeDTO)
         {
-            return View();
+            return await _incomeService.StoreIncomeAsync(incomeDTO);
         }
 
-        // GET: HomeController/Create
-        public ActionResult Create()
+        [HttpPost("update")]
+        public async Task<Result<Object>> UpdateIncomeAsync([FromBody] IncomeDTO incomeDTO)
         {
-            return View();
+            return await _incomeService.UpdateIncomeAsync(incomeDTO);
         }
 
-        // POST: HomeController/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        [HttpGet("all")]
+        public async Task<Result<Object>> GetAllIncomeDetailsAsync(int pageNumber, int pageSize, SortBy sortBy, SortOrderBy orderBy)
         {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            return await _incomeService.GetAllIncomeDetailsAsync(pageNumber, pageSize, sortBy, orderBy);
         }
 
-        // GET: HomeController/Edit/5
-        public ActionResult Edit(int id)
+        [HttpGet("date-range")]
+        public async Task<Result<Object>> GetDateSpeciftcIncomeDetailsAsync(DateTime startingDate, DateTime endDate)
         {
-            return View();
-        }
-
-        // POST: HomeController/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
-
-        // GET: HomeController/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
-
-        // POST: HomeController/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            return await _incomeService.GetDateSpecificIncomeDetailsAsync(startingDate, endDate);
         }
     }
 }

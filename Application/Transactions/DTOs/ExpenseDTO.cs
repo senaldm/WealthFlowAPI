@@ -4,7 +4,7 @@ namespace WealthFlow.Application.Transactions.DTOs
 {
     public class ExpenseDTO
     {
-        public int ExpenseId { get; set; }
+        public Guid ExpenseId { get; set; }
         public string ExpenseName { get; set; }
         public string ExpenseDescription { get; set; }
         public decimal ExpenseAmount { get; set; }

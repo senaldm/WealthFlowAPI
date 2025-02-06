@@ -33,7 +33,8 @@ namespace WealthFlow.Application.Users.Services
                 return Result<Object>.Success("There is no users registerd.", HttpStatusCode.NoContent);
             return Result<Object>.Success(users.Select(user => new UserDTO
             {
-                Name = user.Name,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Email = user.Email,
                 RecoveryEmail = user.RecoveryEmail,
             }));
@@ -54,7 +55,8 @@ namespace WealthFlow.Application.Users.Services
 
             return Result<Object>.Success(new UserDTO
             {
-                Name = user.Name,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Email = user.Email,
                 RecoveryEmail = user.RecoveryEmail,
             });
@@ -76,7 +78,8 @@ namespace WealthFlow.Application.Users.Services
         {
             var userDetails = new UpdateUserDTO
             {
-                Name = user.Name,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
                 RecoveryEmail = user.RecoveryEmail,
@@ -93,7 +96,8 @@ namespace WealthFlow.Application.Users.Services
 
             var user = await _userRepository.GetUserByIdAsync(userId.Value);
 
-            user.Name = updateUserDTO.Name;
+            user.FirstName = updateUserDTO.FirstName;
+            user.LastName = updateUserDTO.LastName;
             user.Email = updateUserDTO.Email;
             user.PhoneNumber = updateUserDTO.PhoneNumber;
             user.RecoveryEmail = updateUserDTO.RecoveryEmail;
@@ -140,7 +144,8 @@ namespace WealthFlow.Application.Users.Services
             var userDTO = new UserDTO
             {
                 Id = user.Id,
-                Name = user.Name,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Email = user.Email,
                 Role = user.Role,
             };

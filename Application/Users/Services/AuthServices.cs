@@ -47,7 +47,8 @@ namespace WealthFlow.Application.Users.Services
             var user = new User
             {
                 Id = Guid.NewGuid(),
-                Name = registerUserDTO.Name,
+                FirstName = registerUserDTO.FirstName,
+                LastName = registerUserDTO.LastName,
                 Email = registerUserDTO.Email,
                 Password = hashedPassword,
                 PhoneNumber = string.IsNullOrEmpty(registerUserDTO.PhoneNumber) ? null : registerUserDTO.PhoneNumber,

@@ -1,4 +1,4 @@
-﻿using WealthFlow.Domain.Entities.User;
+﻿using WealthFlow.Domain.Entities.Users;
 
 namespace WealthFlow.Infrastructure.Users.Repositories
 {

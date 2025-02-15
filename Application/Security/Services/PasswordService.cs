@@ -3,16 +3,16 @@ using BCrypt.Net;
 using System.Security.Cryptography;
 using System.Net;
 using WealthFlow.Shared.Helpers;
-using WealthFlow.Domain.Entities.User;
+using WealthFlow.Domain.Entities.Users;
 using WealthFlow.Infrastructure.Users.Repositories;
 
 namespace WealthFlow.Application.Security.Services
 {
-    public class PassowordService : IPasswordService
+    public class PasswordService : IPasswordService
     {
         private readonly IAuthRepository _authRepository;
 
-        public PassowordService(IAuthRepository authRepository)
+        public PasswordService(IAuthRepository authRepository)
         {
             _authRepository = authRepository;
         }
@@ -52,18 +52,18 @@ namespace WealthFlow.Application.Security.Services
             return Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
         }
 
-        public async Task<Result> UpdatePasswordIfValidatedAsync(User user,string password)
+        public async Task<Result<String>> UpdatePasswordIfValidatedAsync(User user,string password)
         {
             if (!IsValidPassword(password))
-                return Result.Failure("Password does not meet verification requerements.", HttpStatusCode.BadRequest);
+                return Result<String>.Failure("Password does not meet verification requerements.", HttpStatusCode.BadRequest);
             var hashedPassword = HashPassword(password);
 
             var success = await _authRepository.updatePasswordAsync(user, hashedPassword);
 
             if (!success)
-                return Result.Failure("Failed to update Password", HttpStatusCode.InternalServerError);
+                return Result<String>.Failure("Failed to update Password", HttpStatusCode.InternalServerError);
 
-            return Result.Success(HttpStatusCode.OK);
+            return Result<String>.Success(HttpStatusCode.OK);
         }
 
     }

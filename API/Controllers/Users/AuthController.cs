@@ -27,9 +27,11 @@ namespace WealthFlow.API.Controllers.Users
             if (registerUserDTO == null)
                 return Result<string>.Failure("You must fill the fields");
 
-            if (string.IsNullOrEmpty(registerUserDTO.Name))
-                return Result<string>.Failure("Name is required");
+            if (string.IsNullOrEmpty(registerUserDTO.FirstName))
+                return Result<string>.Failure("First name is required");
 
+            if (string.IsNullOrEmpty(registerUserDTO.LastName))
+                return Result<string>.Failure("Last name is required");
 
             if (string.IsNullOrEmpty(registerUserDTO.Email))
                 return Result<string>.Failure("Email is required");
@@ -40,7 +42,6 @@ namespace WealthFlow.API.Controllers.Users
             return await _authService.RegisterAsync(registerUserDTO);
 
         }
-
 
         [HttpPost("login")]
         public async Task<Result<string>> Login([FromBody]UserLoginDTO loginForm)

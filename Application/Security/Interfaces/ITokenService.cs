@@ -5,10 +5,10 @@ namespace WealthFlow.Application.Security.Interfaces
 {
     public interface ITokenService
     {
-        Task<Result> GenerateJwtToken(UserDTO userDto);
+        Task<Result<String>> GenerateJwtToken(UserDTO userDto);
         Task<bool> StorePasswordResetToken(Guid userId, string token);
         Task<string?> GetPasswordResetTokenIfAny(string key);
-        Task<Result> RefreshTokenAsync(string refreshKey);
+        Task<Result<String>> RefreshTokenAsync(string refreshKey);
         Task RemoveTokensInCache(Guid userId);
     }
 }

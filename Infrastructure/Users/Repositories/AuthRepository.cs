@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using WealthFlow.Domain.Entities.User;
+using WealthFlow.Domain.Entities.Users;
 using WealthFlow.Infrastructure.Persistence.DBContexts;
 
 namespace WealthFlow.Infrastructure.Users.Repositories
@@ -7,12 +7,13 @@ namespace WealthFlow.Infrastructure.Users.Repositories
     public class AuthRepository : IAuthRepository
     {
         private readonly ApplicationDBContext _dbContext;
-        private readonly ILogger _logger;
+        private readonly ILogger<AuthRepository> _logger;
 
-        public AuthRepository(ApplicationDBContext dbContext, ILogger logger)
+        public AuthRepository(ApplicationDBContext dbContext, ILogger<AuthRepository> logger)
         {
             _dbContext = dbContext;
             _logger = logger;
+
         }
 
         public async Task<bool> CreateUserAsync(User user)
@@ -34,7 +35,7 @@ namespace WealthFlow.Infrastructure.Users.Repositories
 
         public async Task<bool> updatePasswordAsync(User user, string hashedPassword)
         {
-            user.Password = hashedPassword;
+            user.PasswordHash = hashedPassword;
 
             return await _dbContext.SaveChangesAsync() > 0;
         }

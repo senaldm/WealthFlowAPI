@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using WealthFlow.Domain.Entities.User;
+using WealthFlow.Domain.Entities.Users;
 using WealthFlow.Infrastructure.Persistence.DBContexts;
 
 namespace WealthFlow.Infrastructure.Users.Repositories

@@ -24,7 +24,7 @@ namespace WealthFlow.Application.Security.Services
             _cacheService = cacheService;
             _contextAccessor = contextAccessor;
         }
-        public async Task<Result> GenerateJwtToken(UserDTO user)
+        public async Task<Result<String>> GenerateJwtToken(UserDTO user)
         {
             var jwtToken = CreateJwtToken(user);
             var refreshToken = GenerateRefreshToken();
@@ -35,11 +35,11 @@ namespace WealthFlow.Application.Security.Services
             bool isStored = await _cacheService.StoreAsync(refreshTokenKey, refreshToken, refreshTokenExpiration);
 
             if(!isStored)
-                return Result.Failure("Please login again", HttpStatusCode.InternalServerError);
+                return Result<String>.Failure("Please login again", HttpStatusCode.InternalServerError);
 
             SetJWTCookie(jwtToken);
 
-            return Result.Success(refreshToken, HttpStatusCode.OK);
+            return Result<String>.Success(refreshToken, HttpStatusCode.OK);
         }
 
         private string CreateJwtToken(UserDTO user)
@@ -88,12 +88,12 @@ namespace WealthFlow.Application.Security.Services
             _contextAccessor.HttpContext.Response.Cookies.Append("jwt", jwtToken, options);
         }
 
-        public async Task<Result> RefreshTokenAsync(string refreshToken)
+        public async Task<Result<String>> RefreshTokenAsync(string refreshToken)
         {
             var userId = await _cacheService.GetAsync($"refresh-token:{refreshToken}");
 
             if (string.IsNullOrEmpty(userId) || Guid.TryParse(userId, out var userGuid))
-                return Result.Failure("Refresh token is invalid or expired.", HttpStatusCode.Unauthorized);
+                return Result<String>.Failure("Refresh token is invalid or expired.", HttpStatusCode.Unauthorized);
 
             var user = new UserDTO { Id = userGuid };
 
@@ -101,7 +101,7 @@ namespace WealthFlow.Application.Security.Services
 
             SetJWTCookie(newJwtToken);
 
-            return Result.Success(HttpStatusCode.NoContent);
+            return Result<String>.Success(HttpStatusCode.NoContent);
         }
    
         public async Task<bool> StorePasswordResetToken(Guid userId, string token)

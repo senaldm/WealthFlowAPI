@@ -1,15 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using WealthFlow.Application.Security.Interfaces;
+using WealthFlow.Application.Security.Services;
 using WealthFlow.Domain.Entities.Transactions;
-using WealthFlow.Domain.Entities.User;
+using WealthFlow.Domain.Entities.Users;
+using WealthFlow.Infrastructure.Persistence.Seeders;
+using Microsoft.AspNetCore.Identity;
 namespace WealthFlow.Infrastructure.Persistence.DBContexts
 {
-    public class ApplicationDBContext : DbContext
+    public class ApplicationDBContext : IdentityDbContext<User>
     {
-        private readonly IPasswordService _passwordService;
-        public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options, IPasswordService passwordService) : base(options)
+
+        public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options)
         {
-            _passwordService = passwordService;
         }
 
         public DbSet<User> Users { get; set; }
@@ -22,22 +25,79 @@ namespace WealthFlow.Infrastructure.Persistence.DBContexts
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
+            //base.OnModelCreating(modelBuilder);
+            //modelBuilder.Entity<User>(entity =>
+            //{
+            //    entity.HasKey(u => u.Id);
+            //    entity.Property(u => u.Id)
+            //          .HasColumnType("CHAR(36)") 
+            //          .HasDefaultValueSql("(UUID())"); 
+            //});
 
-            modelBuilder.Entity<User>()
-                .HasKey(u => u.Id);
+            modelBuilder.Entity<ExpenseType>(entity =>
+            {
+                entity.HasKey(et => et.ExpenceTypeId);
+                entity.Property(et => et.ExpenceTypeId)
+                      .ValueGeneratedNever(); // Disable auto-generation
+            });
 
-            modelBuilder.Entity<User>().HasData(
-                new User
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Senal Dimuthu",
-                    Email = "wealthflow.pft@gmail.com",
-                    Password = _passwordService.HashPassword("admin@123"),
-                    Role = "Admin",
-                    RecoveryEmail = "silentshadowslr12@gmail.com"
-                }
-    );
+            modelBuilder.Entity<IncomeType>(entity =>
+            {
+                entity.HasKey(it => it.IncomeTypeId);
+                entity.Property(it => it.IncomeTypeId)
+                      .ValueGeneratedNever();
+            });
+
+            modelBuilder.Entity<PaymentMethod>(entity =>
+            {
+                entity.HasKey(pm => pm.PaymentMethodId);
+                entity.Property(pm => pm.PaymentMethodId)
+                      .ValueGeneratedNever();
+            });
+
+            modelBuilder.Entity<Expense>(entity =>
+            {
+                entity.HasKey(e => e.ExpenseId);
+
+
+                entity.HasOne(e => e.User)
+                      .WithMany(u => u.Expenses)  // Inverse navigation in User
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.ExpenseType)
+                      .WithMany(et => et.Expences) // Inverse navigation in ExpenseType
+                      .HasForeignKey(e => e.ExpenseTypeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.PaymentMethod)
+                      .WithMany(pm => pm.Expenses) // Inverse navigation in PaymentMethod
+                      .HasForeignKey(e => e.PaymentMethodId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Income>(entity =>
+            {
+                entity.HasKey(e => e.IncomeId);
+
+
+                entity.HasOne(i => i.User)
+                      .WithMany(u => u.Incomes)  // Inverse navigation in User
+                      .HasForeignKey(i => i.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(i => i.IncomeType)
+                      .WithMany(it =>it.Incomes) // Inverse navigation in ExpenseType
+                      .HasForeignKey(i => i.IncomeTypeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.PaymentMethod)
+                      .WithMany(pm => pm.Incomes) // Inverse navigation in PaymentMethod
+                      .HasForeignKey(e => e.PaymentMethodId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+
         }
     }
 }

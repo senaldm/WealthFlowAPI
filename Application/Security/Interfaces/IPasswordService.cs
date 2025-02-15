@@ -1,5 +1,5 @@
 ﻿using WealthFlow.Shared.Helpers;
-using WealthFlow.Domain.Entities.User;
+using WealthFlow.Domain.Entities.Users;
 
 namespace WealthFlow.Application.Security.Interfaces
 {
@@ -12,6 +12,6 @@ namespace WealthFlow.Application.Security.Interfaces
 
         string GeneratePasswordResetToken();
 
-        Task<Result> UpdatePasswordIfValidatedAsync(User user, string password);
+        Task<Result<String>> UpdatePasswordIfValidatedAsync(User user, string password);
     }
 }

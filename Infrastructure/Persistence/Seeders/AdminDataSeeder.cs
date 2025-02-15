@@ -1,8 +1,8 @@
-﻿using WealthFlow.Domain.Entities.User;
+﻿using WealthFlow.Domain.Entities.Users;
 using WealthFlow.Application.Security.Interfaces;
 using WealthFlow.Infrastructure.Persistence.DBContexts;
 
-namespace WealthFlow.Infrastructure.Persistence.Seaders
+namespace WealthFlow.Infrastructure.Persistence.Seeders
 {
     public class AdminDataSeeder
     {
@@ -17,21 +17,21 @@ namespace WealthFlow.Infrastructure.Persistence.Seaders
 
         public void Seed()
         {
-            if (_dbContext.Users.Any())
+            if (!_dbContext.Users.Any(u => u.Email == "wealthflow.pft@gmail.com"))
             {
-                _dbContext.Users.AddRange(new List<User>
-                 {
-                    new User
+
+                var admin = new User
                 {
-                    Id = Guid.NewGuid(),
-                    Name = "Senal Dimuthu",
+                    FirstName = "Senal",
+                    LastName = "Dimuthu",
                     Email = "wealthflow.pft@gmail.com",
                     Password = _passwordService.HashPassword("admin@123"),
                     Role = "Admin",
                     RecoveryEmail = "silentshadowslr12@gmail.com"
-                }
+                };
 
-                });
+                
+                _dbContext.Users.Add(admin);
 
                 _dbContext.SaveChanges();
             }

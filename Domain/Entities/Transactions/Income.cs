@@ -1,7 +1,13 @@
-﻿namespace WealthFlow.Domain.Entities.Transactions
+﻿using WealthFlow.Domain.Entities.Users;
+
+namespace WealthFlow.Domain.Entities.Transactions
 {
     public class Income
     {
+        public Income() 
+        {
+            IncomeId = Guid.NewGuid();
+        }
 
         public Guid IncomeId { get; set; }
         public Guid UserId { get; set; }
@@ -15,6 +21,10 @@
         public DateTime ReceiveDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; } = null;
+
+        public User User { get; set; }
+        public IncomeType IncomeType { get; set; }
+        public PaymentMethod PaymentMethod { get; set; }
 
     }
 }

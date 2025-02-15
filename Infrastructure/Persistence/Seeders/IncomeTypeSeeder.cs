@@ -1,7 +1,7 @@
 ﻿using WealthFlow.Domain.Entities.Transactions;
 using WealthFlow.Infrastructure.Persistence.DBContexts;
 
-namespace WealthFlow.Infrastructure.Persistence.Seaders
+namespace WealthFlow.Infrastructure.Persistence.Seeders
 {
     public class IncomeTypeSeeder
     {

@@ -4,7 +4,7 @@ using WealthFlow.Application.Users.Interfaces;
 using WealthFlow.Application.Security.Interfaces;
 using WealthFlow.Shared.Helpers;
 using System.Net;
-using WealthFlow.Domain.Entities.User;
+using WealthFlow.Domain.Entities.Users;
 using WealthFlow.Infrastructure.Users.Repositories;
 
 namespace WealthFlow.Application.Users.Services
@@ -13,15 +13,13 @@ namespace WealthFlow.Application.Users.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IHttpContextAccessor _contextAccessor;
-        private readonly AuthServices _authServices;
         private readonly ITokenService _tokenService;
 
         public UserServices(IUserRepository userRepository, IHttpContextAccessor contextAccessor, 
-            AuthServices authServices, ITokenService tokenService)
+          ITokenService tokenService)
         {
             _userRepository = userRepository;
             _contextAccessor = contextAccessor;
-            _authServices = authServices;
             _tokenService = tokenService;
         }
 

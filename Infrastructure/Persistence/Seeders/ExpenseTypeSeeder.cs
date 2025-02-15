@@ -1,13 +1,13 @@
 ﻿using WealthFlow.Domain.Entities.Transactions;
 using WealthFlow.Infrastructure.Persistence.DBContexts;
 
-namespace WealthFlow.Infrastructure.Persistence.Seaders
+namespace WealthFlow.Infrastructure.Persistence.Seeders
 {
-    public class ExpenseTypeSeader
+    public class ExpenseTypeSeeder
     {
         private readonly ApplicationDBContext _dbContext;
 
-        public ExpenseTypeSeader(ApplicationDBContext dbContext)
+        public ExpenseTypeSeeder(ApplicationDBContext dbContext)
         {
             _dbContext = dbContext;
         }
